@@ -49,9 +49,26 @@ func (e *myCrawlerError) genFullErrMsg() {
 		buffer.WriteString(": ")
 	}
 	buffer.WriteString(e.errMsg)
-	e.fullErrMsg = fmt.Sprintf("%s", buffer.String())
+	e.fullErrMsg = buffer.String()
 }
 
 func NewCrawlerError(errType ErrorType, errMsg string) CrawlerError {
 	return &myCrawlerError{errType: errType, errMsg: strings.TrimSpace(errMsg)}
+}
+
+// IllegalParameterError 代表非法的参数的错误类型。
+type IllegalParameterError struct {
+	msg string
+}
+
+// NewIllegalParameterError 会创建一个IllegalParameterError类型的实例。
+func NewIllegalParameterError(errMsg string) IllegalParameterError {
+	return IllegalParameterError{
+		msg: fmt.Sprintf("illegal parameter: %s",
+			strings.TrimSpace(errMsg)),
+	}
+}
+
+func (ipe IllegalParameterError) Error() string {
+	return ipe.msg
 }
