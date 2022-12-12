@@ -26,6 +26,29 @@ func (args *RequestArgs) Check() error {
 	return nil
 }
 
+// Same 用于判断两个请求相关的参数容器是否相同。
+func (args *RequestArgs) Same(another *RequestArgs) bool {
+	if another == nil {
+		return false
+	}
+	if another.MaxDepth != args.MaxDepth {
+		return false
+	}
+	anotherDomains := another.AcceptedDomains
+	anotherDomainsLen := len(anotherDomains)
+	if anotherDomainsLen != len(args.AcceptedDomains) {
+		return false
+	}
+	if anotherDomainsLen > 0 {
+		for i, domain := range anotherDomains {
+			if domain != args.AcceptedDomains[i] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // 数据相关参数
 type DataArgs struct {
 	// 请求缓冲器的容量
@@ -95,4 +118,12 @@ func (args *ModuleArgs) Check() error {
 		return genError("empty pipeline list")
 	}
 	return nil
+}
+
+func (args *ModuleArgs) Summary() ModuleArgsSummary {
+	return ModuleArgsSummary{
+		DownloaderListSize: len(args.Downloaders),
+		AnalyzerListSize:   len(args.Analyzers),
+		PipelineListSize:   len(args.Pipelines),
+	}
 }

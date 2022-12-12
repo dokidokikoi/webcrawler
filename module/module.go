@@ -52,29 +52,6 @@ type Module interface {
 	Summary() SummaryStruct
 }
 
-// 组件id模板
-var midTemplate = "%s%d|%s"
-
-// 组件类型
-type Type string
-
-// 当前认可的组件类型的常量
-const (
-	// 下载器
-	TYPE_DOWNLOADER Type = "dowload"
-	// 分析器
-	TYPE_ANALYZER Type = "analyzer"
-	// 条目处理器
-	TYPE_PIPELINE Type = "pipeline"
-)
-
-// 合法的组件类型-字母的映射
-var legalTypeLetterMap = map[Type]string{
-	TYPE_DOWNLOADER: "D",
-	TYPE_ANALYZER:   "A",
-	TYPE_PIPELINE:   "P",
-}
-
 // 下载器接口
 // 该接口的实现类型必须是并发安全的
 type Downloader interface {
@@ -93,7 +70,7 @@ type Analyzer interface {
 	RespParsers() []ParseResponse
 	// 根据规则分析响应并返回请求和条目
 	// 响应需要分别经过若干响应解析函数的处理，然后合并结果
-	Analyzer(resp *Response) ([]Data, []error)
+	Analyze(resp *Response) ([]Data, []error)
 }
 
 // 用于处理条目的函数类型

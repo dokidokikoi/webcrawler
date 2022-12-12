@@ -4,7 +4,7 @@ import "net/http"
 
 type Data interface {
 	// 数据是否有效
-	Vaild() bool
+	Valid() bool
 }
 
 type Request struct {
@@ -22,7 +22,7 @@ func (r *Request) Depth() uint32 {
 	return r.depth
 }
 
-func (r *Request) Vaild() bool {
+func (r *Request) Valid() bool {
 	return r.httpReq != nil && r.httpReq.URL != nil
 }
 
@@ -37,7 +37,7 @@ type Response struct {
 	depth uint32
 }
 
-func (r *Response) HTTPResq() *http.Response {
+func (r *Response) HTTPResp() *http.Response {
 	return r.httpResp
 }
 
@@ -45,16 +45,16 @@ func (r *Response) Depth() uint32 {
 	return r.depth
 }
 
-func (r *Response) Vaild() bool {
+func (r *Response) Valid() bool {
 	return r.httpResp != nil && r.httpResp.Body != nil
 }
 
-func NewRespone(resp *http.Response, depth uint32) *Response {
+func NewResponse(resp *http.Response, depth uint32) *Response {
 	return &Response{resp, depth}
 }
 
 type Item map[string]interface{}
 
-func (item *Item) Vaild() bool {
+func (item Item) Valid() bool {
 	return item != nil
 }
