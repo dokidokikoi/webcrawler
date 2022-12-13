@@ -6,10 +6,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	lib "github.com/dokidokikoi/webcrawler/examples/finder/internal"
-	"github.com/dokidokikoi/webcrawler/examples/finder/monitor"
 	"github.com/dokidokikoi/webcrawler/log"
 	sched "github.com/dokidokikoi/webcrawler/scheduler"
 )
@@ -26,12 +24,12 @@ func init() {
 	flag.StringVar(
 		&firstURL,
 		"first",
-		"http://zhihu.sogou.com/zhihu?query=golang+logo",
+		"https://cn.bing.com/images/search?q=miku&form=HDRSC3&first=1&tsc=ImageHoverTitle",
 		"The first URL which you want to access.")
 	flag.StringVar(
 		&domains,
 		"domains",
-		"zhihu.com",
+		"bing.net",
 		"The primary domains which you accepted. Please using comma-separated multiple domains.")
 
 	flag.UintVar(&depth, "depth", 3, "The depth for crawling.")
@@ -106,20 +104,20 @@ func main() {
 		log.L().Sugar().Fatalf("An error occurs when initializing scheduler: %s", err)
 	}
 
-	// 准备监控参数
-	checkInterval := time.Second
-	summarizeInterval := 100 * time.Millisecond
-	maxIdleCount := uint(5)
+	// // 准备监控参数
+	// checkInterval := time.Second
+	// summarizeInterval := 100 * time.Millisecond
+	// maxIdleCount := uint(5)
 
-	// 开始监控
-	checkCountChan := monitor.Monitor(
-		scheduler,
-		checkInterval,
-		summarizeInterval,
-		maxIdleCount,
-		true,
-		lib.Record,
-	)
+	// // 开始监控
+	// checkCountChan := monitor.Monitor(
+	// 	scheduler,
+	// 	checkInterval,
+	// 	summarizeInterval,
+	// 	maxIdleCount,
+	// 	true,
+	// 	lib.Record,
+	// )
 
 	// 准备调度器的启动参数
 	firstHTTPReq, err := http.NewRequest("GET", firstURL, nil)
@@ -135,5 +133,7 @@ func main() {
 	}
 
 	// 等待监控结束
-	<-checkCountChan
+	// <-checkCountChan
+	wait := make(chan struct{}, 2)
+	<-wait
 }

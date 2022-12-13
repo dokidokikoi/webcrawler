@@ -43,7 +43,7 @@ type myBuffer struct {
 // 这里使用 select 让 Put 变成非阻塞操作
 func (buf *myBuffer) Put(datum interface{}) (ok bool, err error) {
 	buf.closingLock.RLock()
-	defer buf.closingLock.Unlock()
+	defer buf.closingLock.RUnlock()
 
 	if buf.Closed() {
 		return false, ErrClosedBuffer

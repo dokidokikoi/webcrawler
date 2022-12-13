@@ -3,7 +3,7 @@ package internal
 import (
 	"github.com/dokidokikoi/webcrawler/module"
 	"github.com/dokidokikoi/webcrawler/module/local/analyzer"
-	"github.com/dokidokikoi/webcrawler/module/local/dowloader"
+	"github.com/dokidokikoi/webcrawler/module/local/downloader"
 	"github.com/dokidokikoi/webcrawler/module/local/pipeline"
 )
 
@@ -22,7 +22,7 @@ func GetDownloaders(number uint8) ([]module.Downloader, error) {
 		if err != nil {
 			return downloaders, err
 		}
-		d, err := dowloader.New(
+		d, err := downloader.New(
 			mid,
 			genHTTPClient(),
 			module.CalculateScoreSimple)

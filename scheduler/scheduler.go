@@ -70,74 +70,6 @@ type myScheduler struct {
 	summary SchedSummary
 }
 
-func (sched *myScheduler) Init(
-	reqArgs RequestArgs,
-	dataArgs DataArgs,
-	moduleArgs ModuleArgs) (err error) {
-	// 检查状态
-	log.L().Sugar().Infof("Check status for initialization...")
-	var oldStatus Status
-	oldStatus, err = sched.checkAndSetStatus(SCHED_STATUS_INITIALIZING)
-	if err != nil {
-		return
-	}
-
-	defer func() {
-		sched.statusLock.Lock()
-		if err != nil {
-			sched.status = oldStatus
-		} else {
-			sched.status = SCHED_STATUS_INITIALIZED
-		}
-		sched.statusLock.Unlock()
-	}()
-
-	// 检查参数
-	log.L().Sugar().Infof("Check request argments...")
-	if err = reqArgs.Check(); err != nil {
-		return err
-	}
-	log.L().Sugar().Infof("Check data argments...")
-	if err = dataArgs.Check(); err != nil {
-		return err
-	}
-	log.L().Sugar().Infof("Data arguments are valid.")
-	log.L().Sugar().Infof("Check module argments...")
-	if err = moduleArgs.Check(); err != nil {
-		return err
-	}
-	log.L().Sugar().Infof("Module argments are vaild.")
-
-	// 初始化内部字段
-	log.L().Sugar().Infof("Initialize scheduler's fields...")
-	if sched.registrar == nil {
-		sched.registrar = module.NewRegistrar()
-	} else {
-		sched.registrar.Clear()
-	}
-	sched.maxDepth = reqArgs.MaxDepth
-	log.L().Sugar().Infof("-- Max depth: %d", sched.maxDepth)
-	sched.acceptedDomainMap, _ = cmap.NewConcurrentMap(1, nil)
-	for _, domain := range reqArgs.AcceptedDomains {
-		sched.acceptedDomainMap.Put(domain, struct{}{})
-	}
-	log.L().Sugar().Infof("-- Accepted primary domain: %v", reqArgs.AcceptedDomains)
-	sched.urlMap, _ = cmap.NewConcurrentMap(16, nil)
-	log.L().Sugar().Infof("-- URL map: length: %d, concurrency: %d",
-		sched.urlMap.Len(), sched.urlMap.Concurrency())
-	sched.initBufferPool(dataArgs)
-	sched.resetContext()
-	sched.summary = newSchedSummary(reqArgs, dataArgs, moduleArgs, sched)
-
-	// 注册组件
-	log.L().Sugar().Info("Register modules...")
-	if err = sched.registerModules(moduleArgs); err != nil {
-		return err
-	}
-	log.L().Sugar().Info("Scheduler has been initialized.")
-	return nil
-}
-
 func (sched *myScheduler) checkAndSetStatus(
 	wantedStatus Status) (oldStatus Status, err error) {
 	sched.statusLock.Lock()
@@ -243,66 +175,6 @@ func (sched *myScheduler) registerModules(moduleArgs ModuleArgs) error {
 	}
 	log.L().Sugar().Infof("All pipeline have been registered. (number: %d)",
 		len(moduleArgs.Pipelines))
-	return nil
-}
-
-func (sched *myScheduler) Start(firstHTTPReq *http.Request) (err error) {
-	defer func() {
-		if p := recover(); p != nil {
-			errMsg := fmt.Sprintf("Fatal scheduler error: %s", p)
-			log.L().Sugar().Info(errMsg)
-			err = genError(errMsg)
-		}
-	}()
-	log.L().Sugar().Info("Start scheduler...")
-
-	// 检查状态
-	log.L().Sugar().Info("Check status for start...")
-	var oldStatus Status
-	oldStatus, err = sched.checkAndSetStatus(SCHED_STATUS_STARTING)
-	defer func() {
-		sched.statusLock.Lock()
-		if err != nil {
-			sched.status = oldStatus
-		} else {
-			sched.status = SCHED_STATUS_STARTED
-		}
-		sched.statusLock.Unlock()
-	}()
-	if err != nil {
-		return
-	}
-
-	// 检查参数
-	log.L().Sugar().Info("Check first HTTP request...")
-	if firstHTTPReq == nil {
-		err = genParameterError("nil first HTTP request")
-		return
-	}
-	log.L().Sugar().Info("The first HTTP request is valid.")
-	// 获得首次请求的主域名，并将其添加到可接受的主域名的字典
-	log.L().Sugar().Info("Get the primary domain...")
-	log.L().Sugar().Info("-- Host: $s", firstHTTPReq.Host)
-	var primaryDomain string
-	primaryDomain, err = getPrimaryDomain(firstHTTPReq.Host)
-	if err != nil {
-		return
-	}
-	log.L().Sugar().Info("-- Primary domain: %s", primaryDomain)
-	sched.acceptedDomainMap.Put(primaryDomain, struct{}{})
-
-	// 开始调度数据和组件
-	if err = sched.checkBufferPoolForStart(); err != nil {
-		return
-	}
-	sched.download()
-	sched.analyze()
-	sched.pick()
-	log.L().Sugar().Info("Scheduler has been started.")
-
-	// 放入第一个请求
-	firstReq := module.NewRequest(firstHTTPReq, 0)
-	sched.sendReq(firstReq)
 	return nil
 }
 
@@ -614,7 +486,7 @@ func (sched *myScheduler) Stop() (err error) {
 	// 检查状态
 	log.L().Sugar().Info("Check status for stop...")
 	var oldStatus Status
-	oldStatus, err = sched.checkAndSetStatus(SCHED_STATUS_STARTING)
+	oldStatus, err = sched.checkAndSetStatus(SCHED_STATUS_STOPPING)
 	defer func() {
 		sched.statusLock.Lock()
 		if err != nil {
